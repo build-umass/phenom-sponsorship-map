@@ -23,6 +23,3 @@ npm start
 View the map at <http://localhost:3000>, or <http://localhost:3000/embed/> for an `iframe`-d version.
 
 Publish changes by pushing them to the `main` branch.
-
-
-test push
