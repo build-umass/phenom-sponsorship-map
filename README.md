@@ -1,4 +1,4 @@
-# PHENOM Co-sponsorship map
+# PHENOM Sponsorship map
 
 Map of support to [The Public Higher Education Network of Massachusetts (PHENOM)](https://phenomonline.org/). Adapted from the commitment map of [The People's House campaign](https://actonmass.org/the-campaign/).
 
