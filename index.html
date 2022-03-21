@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Commitments to The People's House campaign</title>
+    <title>Commitments to PHENOM campaign</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base target="_blank" />
 
@@ -21,8 +21,8 @@
         --none-color--active: rgba(0, 0, 0, 0.4);
         /* --committed-color: rgba(90, 186, 161, 0.6);
       --committed-color--active: rgba(90, 186, 161, 0.9); */
-        --vote-Y-color: rgba(137, 0, 250, 0.5);
-        --vote-Y-color--active: rgba(137, 0, 250, 0.9);
+        --vote-Y-color: rgba(147, 55, 191, 0.5);
+        --vote-Y-color--active: rgba(147, 55, 191, 0.9);
         --vote-N-color: rgba(128, 128, 128, 1);
       }
 
@@ -185,7 +185,11 @@
 
       Promise.all([
         fetch(
+          // House Google Sheet
           "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=1476672185&single=true&output=csv"
+
+          // Senate Google Sheet <- ERROR: cannot build map
+          // "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=34717615&single=true&output=csv"
         )
           .then((response) => response.text())
           .then((csv) => {
@@ -193,19 +197,26 @@
               header: true,
               dynamicTyping: true,
             });
+            console.log("Parse Data success!"); // house/senate both OK at this point
             return Promise.resolve(parsed.data);
           }),
         fetch(
+          // House district boundary
           "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_house.geojson"
+
+          // Senate district boundary
+          // "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_senate.geojson"
         ).then((response) => response.json()),
       ]).then(([supporters, houseFeatures]) => {
+        // console.log("houseFeatures", houseFeatures);
         const supportersByDistrict = supporters.reduce((acc, cur) => {
           acc[cur.district] = cur;
           return acc;
         }, {});
 
-        console.log(supportersByDistrict);
+        console.log(supportersByDistrict); // house/senate both OK at this point
 
+        // returns legislator name
         function repProperties(feature) {
           const supporter = supportersByDistrict[feature.properties.district];
           return supporter;
@@ -228,10 +239,16 @@
           </div>
         `;
 
-        const districtStyle = (rep) => ({
+        // const districtStyle = (rep) => ({
+        //   // Expecting "voted", or "none"
+        //   className: `district district--${rep.color}`,
+        // });
+        function districtStyle(rep) {
+          console.log(rep);
+          console.log(typeof rep);
           // Expecting "voted", or "none"
-          className: `district district--${rep.color}`,
-        });
+          return { className: `district district--${rep.color}` };
+        }
 
         const districtPopup = (rep) => `
           <p>
@@ -250,8 +267,10 @@
         };
 
         /* Build the map */
+        console.log("houseFeatures 2", houseFeatures); // {type: 'FeatureCollection', features: Array(40)}
 
         const houseLayer = L.geoJson(houseFeatures, {
+          // ERROR: when using senate data, reProperties(feature) is undefined
           style: (feature) => districtStyle(repProperties(feature)),
           onEachFeature: (feature, layer) => {
             const rep = repProperties(feature);
