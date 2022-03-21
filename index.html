@@ -1,199 +1,222 @@
 <html>
+  <head>
+    <title>Commitments to PHENOM campaign</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base target="_blank" />
 
-<head>
-  <title>Commitments to The People's House campaign</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <base target="_blank">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+      crossorigin=""
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-search@2.9.9/dist/leaflet-search.min.css"
+    />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-    crossorigin="" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.9.9/dist/leaflet-search.min.css" />
+    <style>
+      :root {
+        --none-color: rgba(0, 0, 0, 0.2);
+        --none-color--active: rgba(0, 0, 0, 0.4);
+        /* --committed-color: rgba(90, 186, 161, 0.6);
+      --committed-color--active: rgba(90, 186, 161, 0.9); */
+        --vote-Y-color: rgba(147, 55, 191, 0.5);
+        --vote-Y-color--active: rgba(147, 55, 191, 0.9);
+        --vote-N-color: rgba(128, 128, 128, 1);
+      }
 
-  <style>
-    :root {
-      --none-color: rgba(0, 0, 0, 0.2);
-      --none-color--active: rgba(0, 0, 0, 0.4);
-      --committed-color: rgba(90, 186, 161, 0.6);
-      --committed-color--active: rgba(90, 186, 161, 0.9);
-      --vote-Y-color: rgba(250, 162, 0, 0.5);
-      --vote-Y-color--active: rgba(250, 162, 0, 0.9);
-      --vote-N-color: rgba(128, 128, 128, 1.0);
-    }
+      body {
+        margin: 0;
+        /* Matching .leaflet-container */
+        background: #ddd;
+      }
 
-    body {
-      margin: 0;
-      /* Matching .leaflet-container */
-      background: #ddd;
-    }
+      #map {
+        height: 100%;
+        width: 100%;
+      }
 
-    #map {
-      height: 100%;
-      width: 100%;
-    }
+      #map:not(.leaflet-container)::after {
+        content: "…loading map…";
+        display: block;
+        padding: 1rem;
+        text-align: center;
+        /* Matching .leaflet-container */
+        font: oblique 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+      }
 
-    #map:not(.leaflet-container)::after {
-      content: '…loading map…';
-      display: block;
-      padding: 1rem;
-      text-align: center;
-      /* Matching .leaflet-container */
-      font: oblique 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
-    }
+      a {
+        color: #00529a !important;
+      }
 
-    a {
-      color: #00529A !important;
-    }
+      .legend {
+        background: white;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        padding: 0 0.5rem;
+      }
 
-    .legend {
-      background: white;
-      border: 2px solid rgba(0, 0, 0, 0.2);
-      border-radius: 4px;
-      padding: 0 0.5rem;
-    }
+      .legend__item {
+        display: flex;
+        align-items: center;
+        margin: 0.5rem 0;
+      }
 
-    .legend__item {
-      display: flex;
-      align-items: center;
-      margin: 0.5rem 0;
-    }
+      .legend__item::before {
+        background: var(--none-color);
+        border-radius: 2px;
+        content: "";
+        display: block;
+        margin-right: 0.5rem;
+        height: 1rem;
+        width: 1rem;
+      }
 
-    .legend__item::before {
-      background: var(--none-color);
-      border-radius: 2px;
-      content: '';
-      display: block;
-      margin-right: 0.5rem;
-      height: 1rem;
-      width: 1rem;
-    }
-
-    .legend__item--committed::before {
+      /* .legend__item--committed::before {
       background: var(--committed-color);
-    }
+    } */
 
-    .legend__item--voted::before {
-      background: var(--vote-Y-color);
-    }
+      .legend__item--voted::before {
+        background: var(--vote-Y-color);
+      }
 
-    .district {
-      fill: var(--none-color);
-      fill-opacity: 1;
-      stroke: var(--none-color);
-      stroke-width: 1;
-    }
+      .district {
+        fill: var(--none-color);
+        fill-opacity: 1;
+        stroke: var(--none-color);
+        stroke-width: 1;
+      }
 
-    .district:hover {
-      stroke-width: 4;
-    }
+      .district:hover {
+        stroke-width: 4;
+      }
 
-    .district--active {
-      fill: var(--none-color--active);
-    }
-
+      .district--active {
+        fill: var(--none-color--active);
+      }
+      /* 
     .district--committed {
       fill: var(--committed-color);
     }
 
     .district--committed.district--active {
       fill: var(--committed-color--active);
-    }
+    } */
 
-    .district--voted {
-      fill: var(--vote-Y-color);
-    }
+      .district--voted {
+        fill: var(--vote-Y-color);
+      }
 
-    .district--voted.district--active {
-      fill: var(--vote-Y-color--active);
-    }
+      .district--voted.district--active {
+        fill: var(--vote-Y-color--active);
+      }
 
-    .leaflet-control-search .search-input {
-      outline: none;
-      width: 15rem;
-    }
+      .leaflet-control-search .search-input {
+        outline: none;
+        width: 15rem;
+      }
 
-    .leaflet-control-search .search-tooltip {
-      margin: 2px 0 0;
-      width: 100%;
-      border-radius: 4px;
-    }
+      .leaflet-control-search .search-tooltip {
+        margin: 2px 0 0;
+        width: 100%;
+        border-radius: 4px;
+      }
 
-    .leaflet-control-search .search-tip {
-      margin: 0;
-      border-radius: 0;
-    }
+      .leaflet-control-search .search-tip {
+        margin: 0;
+        border-radius: 0;
+      }
 
-    table {
-      border-collapse: collapse;
-      border-spacing: 0;
-      font: inherit;
-      width: 100%;
-    }
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        font: inherit;
+        width: 100%;
+      }
 
-    th,
-    td {
-      text-align: left;
-      vertical-align: baseline;
-      white-space: nowrap;
-    }
+      th,
+      td {
+        text-align: left;
+        vertical-align: baseline;
+        white-space: nowrap;
+      }
 
-    .commitment {
+      /* .commitment {
       color: var(--committed-color--active);
       font-weight: bold;
       padding-right: 0.25rem;
-    }
+    } */
 
-    .vote {
-      color: var(--vote-N-color);
-      font-weight: bold;
-      padding-right: 0.25rem;
-    }
+      .vote {
+        color: var(--vote-N-color);
+        font-weight: bold;
+        padding-right: 0.25rem;
+      }
 
-    .vote--Y {
-      color: var(--vote-Y-color--active);
-    }
+      .vote--Y {
+        color: var(--vote-Y-color--active);
+      }
 
-    .vote-details {
-      color: var(--vote-N-color);
-      font-size: 0.75rem;
-      font-style: oblique;
-    }
-  </style>
-</head>
+      .vote-details {
+        color: var(--vote-N-color);
+        font-size: 0.75rem;
+        font-style: oblique;
+      }
+    </style>
+  </head>
 
-<body>
-  <div id="map"></div>
+  <body>
+    <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-    crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet-providers@1.11.0/leaflet-providers.js"></script>
-  <script src="https://unpkg.com/leaflet-search@2.9.9/dist/leaflet-search.min.js"></script>
-  <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
+    <script
+      src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/leaflet-providers@1.11.0/leaflet-providers.js"></script>
+    <script src="https://unpkg.com/leaflet-search@2.9.9/dist/leaflet-search.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
 
-  <script>
-    /* global L, Papa */
+    <script>
+      /* global L, Papa */
 
-    /* Load the supporter data and house district boundaries */
+      /* Load the supporter data and house district boundaries */
 
-    Promise.all([
-      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=1476672185&single=true&output=csv')
-        .then((response) => response.text())
-        .then((csv) => {
-          const parsed = Papa.parse(csv, { header: true, dynamicTyping: true });
-          return Promise.resolve(parsed.data);
-        }),
-      fetch('https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_house.geojson')
-        .then((response) => response.json()),
-    ])
-      .then(([supporters, houseFeatures]) => {
+      Promise.all([
+        fetch(
+          // House Google Sheet
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=1476672185&single=true&output=csv"
+
+          // Senate Google Sheet <- ERROR: cannot build map
+          // "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=34717615&single=true&output=csv"
+        )
+          .then((response) => response.text())
+          .then((csv) => {
+            const parsed = Papa.parse(csv, {
+              header: true,
+              dynamicTyping: true,
+            });
+            console.log("Parse Data success!"); // house/senate both OK at this point
+            return Promise.resolve(parsed.data);
+          }),
+        fetch(
+          // House district boundary
+          "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_house.geojson"
+
+          // Senate district boundary
+          // "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_senate.geojson"
+        ).then((response) => response.json()),
+      ]).then(([supporters, houseFeatures]) => {
+        // console.log("houseFeatures", houseFeatures);
         const supportersByDistrict = supporters.reduce((acc, cur) => {
           acc[cur.district] = cur;
           return acc;
         }, {});
 
-        console.log(supportersByDistrict)
-        
+        console.log(supportersByDistrict); // house/senate both OK at this point
+
+        // returns legislator name
         function repProperties(feature) {
           const supporter = supportersByDistrict[feature.properties.district];
           return supporter;
@@ -207,46 +230,54 @@
 
         /* Templates for map elements */
 
-        const districtLegend = () => /* html */`
-          <div class="legend__item legend__item--committed">
-            House Representative Support for Debt-free college
-          </div>
+        const districtLegend = () => /* html */ `
           <div class="legend__item legend__item--voted">
+            Supports Debt-free Education
+          </div>
+          <div class="legend__item legend__item--none">
             Support Unknown
           </div>
         `;
 
-        const districtStyle = (rep) => ({
-          // Expecting "committed", "voted", or "none"
-          className: `district district--${rep.color}`,
-        });
+        // const districtStyle = (rep) => ({
+        //   // Expecting "voted", or "none"
+        //   className: `district district--${rep.color}`,
+        // });
+        function districtStyle(rep) {
+          console.log(rep);
+          console.log(typeof rep);
+          // Expecting "voted", or "none"
+          return { className: `district district--${rep.color}` };
+        }
 
         const districtPopup = (rep) => `
           <p>
             <strong>${rep.first_name} ${rep.last_name}</strong>
-            ${rep.url ? `(<a href="${rep.url}">contact</a>)` : ''}
-            <br />${rep.party ? `${rep.party},` : ''}
+            ${rep.url ? `(<a href="${rep.url}">contact</a>)` : ""}
+            <br />${rep.party ? `${rep.party},` : ""}
             ${rep.district}
-            ${rep.elect ? '(Elect)' : ''}
+            ${rep.elect ? "(Elect)" : ""}
           </p>
 
         `;
 
         const onPopup = (e) => {
-          const active = e.type === 'popupopen';
-          e.target.getElement().classList.toggle('district--active', active);
+          const active = e.type === "popupopen";
+          e.target.getElement().classList.toggle("district--active", active);
         };
 
         /* Build the map */
+        console.log("houseFeatures 2", houseFeatures); // {type: 'FeatureCollection', features: Array(40)}
 
         const houseLayer = L.geoJson(houseFeatures, {
+          // ERROR: when using senate data, reProperties(feature) is undefined
           style: (feature) => districtStyle(repProperties(feature)),
           onEachFeature: (feature, layer) => {
             const rep = repProperties(feature);
 
             layer.bindPopup(districtPopup(rep));
-            layer.on('popupopen', onPopup);
-            layer.on('popupclose', onPopup);
+            layer.on("popupopen", onPopup);
+            layer.on("popupclose", onPopup);
 
             // Enable searching by name or district; inspired by:
             // https://github.com/stefanocudini/leaflet-search/issues/52#issuecomment-266168224
@@ -257,10 +288,10 @@
 
         const searchControl = new L.Control.Search({
           layer: houseLayer,
-          propertyName: 'index',
+          propertyName: "index",
           initial: false,
           marker: false,
-          textPlaceholder: 'Search reps and districts',
+          textPlaceholder: "Search reps and districts",
           autoCollapse: true,
           moveToLocation(latlng, title, map) {
             map.fitBounds(latlng.layer.getBounds());
@@ -268,15 +299,15 @@
           },
         });
 
-        const legendControl = L.control({ position: 'topright' });
+        const legendControl = L.control({ position: "topright" });
         legendControl.onAdd = () => {
-          const div = L.DomUtil.create('div', 'legend');
+          const div = L.DomUtil.create("div", "legend");
           div.innerHTML = districtLegend();
           return div;
         };
 
-        const map = L.map('map')
-          .addLayer(L.tileLayer.provider('CartoDB.Positron'))
+        const map = L.map("map")
+          .addLayer(L.tileLayer.provider("CartoDB.Positron"))
           .addLayer(houseLayer)
           .addControl(searchControl)
           .addControl(legendControl)
@@ -285,7 +316,6 @@
         // Avoid accidental excessive zoom out
         map.setMinZoom(map.getZoom());
       });
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>

@@ -1,10 +1,8 @@
-# actonmass-campaign-map
+# PHENOM Co-sponsorship map
 
-Map of commitments to [The People's House campaign](https://actonmass.org/the-campaign/).
+Map of support to [The Public Higher Education Network of Massachusetts (PHENOM)](https://phenomonline.org/). Adapted from the commitment map of [The People's House campaign](https://actonmass.org/the-campaign/).
 
 Built with [Leaflet](https://leafletjs.com/), using data from a Google Sheet provided by the campaign, combined with geographic data from [bhrutledge/ma-legislature](https://github.com/bhrutledge/ma-legislature). Hosted on GitHub Pages.
-
-Hopefully this can serve as an example for similar maps, and maybe evolve into a template.
 
 ## Developing
 
