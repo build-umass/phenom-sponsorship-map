@@ -298,7 +298,7 @@
           return div;
         };
 
-        const map = L.map("map")
+        const map = L.map("map") // This is where ID is set. (<id="map">)
           .addLayer(L.tileLayer.provider("CartoDB.Positron"))
           .addLayer(houseLayer)
           .addControl(searchControl)
