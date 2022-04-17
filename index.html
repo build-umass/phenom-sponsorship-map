@@ -168,7 +168,6 @@
 
   <body>
     <div id="map"></div>
-    <div id="map2"></div>
 
     <script
       src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
@@ -188,13 +187,10 @@
         fetch(
           // House Google Sheet
           "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=1476672185&single=true&output=csv"
-
-          // Senate Google Sheet
-          // "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=34717615&single=true&output=csv"
         )
-          .then((response) => response.text())
-          .then((csv) => {
-            const parsed = Papa.parse(csv, {
+          .then((houseResponse) => houseResponse.text())
+          .then((houseCsv) => {
+            const parsed = Papa.parse(houseCsv, {
               header: true,
               dynamicTyping: true,
             });
@@ -203,33 +199,61 @@
         fetch(
           // House district boundary
           "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_house.geojson"
+        ).then((houseResponse) => houseResponse.json()),
 
+        fetch(
+          // Senate Google Sheet
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=34717615&single=true&output=csv"
+        )
+          .then((senateResponse) => senateResponse.text())
+          .then((senateCsv) => {
+            const parsed = Papa.parse(senateCsv, {
+              header: true,
+              dynamicTyping: true,
+            });
+            return Promise.resolve(parsed.data);
+          }),
+        fetch(
           // Senate district boundary
-          // "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_senate.geojson"
-        ).then((response) => response.json()),
-      ]).then(([supporters, houseFeatures]) => {
-        const supportersByDistrict = supporters.reduce((acc, cur) => {
-          acc[cur.district] = cur;
-          return acc;
-        }, {});
+          "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_senate.geojson"
+        ).then((senateResponse) => senateResponse.json()),
+      ]).then(
+        ([
+          houseSupporters,
+          houseFeatures,
+          senateSupporters,
+          senateFeatures,
+        ]) => {
+          const houseSupportersByDistrict = houseSupporters.reduce(
+            (acc, cur) => {
+              acc[cur.district] = cur;
+              return acc;
+            },
+            {}
+          );
+          const senateSupportersByDistrict = senateSupporters.reduce(
+            (acc, cur) => {
+              acc[cur.district] = cur;
+              return acc;
+            },
+            {}
+          );
 
-        console.log(supportersByDistrict);
+          // returns legislator name
+          function houseProperties(feature) {
+            const houseSupporter =
+              houseSupportersByDistrict[feature.properties.district];
+            return houseSupporter;
+          }
+          function senateProperties(feature) {
+            const senateSupporter =
+              senateSupportersByDistrict[feature.properties.district];
+            return senateSupporter;
+          }
 
-        // returns legislator name
-        function repProperties(feature) {
-          const supporter = supportersByDistrict[feature.properties.district];
-          return supporter;
-          /* TODO: Join with feature properties when contact info for "elect" reps is added
-          // Supporter info from Sheet may be incomplete, so only prefer it to
-          // replace outgoing incumbents
-          return supporter && supporter.elect
-            ? { ...feature.properties, ...supporter } : { ...supporter, ...feature.properties };
-          */
-        }
+          /* Templates for map elements */
 
-        /* Templates for map elements */
-
-        const districtLegend = () => /* html */ `
+          const districtLegend = () => /* html */ `
           <div class="legend__item legend__item--voted">
             Supports Debt-free Education
           </div>
@@ -238,207 +262,145 @@
           </div>
         `;
 
-        const districtStyle = (rep) => ({
-          // Expecting "voted", or "none"
-          className: `district district--${rep.color}`,
-        });
+          const districtStyle = (rep) => ({
+            // Expecting "voted", or "none"
+            className: `district district--${rep.color}`,
+          });
 
-        const districtPopup = (rep) => `
+          const districtPopup = (rep) => `
           <p>
             <strong>${rep.first_name} ${rep.last_name}</strong>
-            ${rep.url ? `(<a href="${rep.url}">contact</a>)` : ""}
-            <br />${rep.party ? `${rep.party},` : ""}
-            ${rep.district}
-            ${rep.elect ? "(Elect)" : ""}
+            <br />${rep.party ? `${rep.party}` : ""}
+            <br/>${rep.district}
           </p>
-
         `;
 
-        const onPopup = (e) => {
-          const active = e.type === "popupopen";
-          e.target.getElement().classList.toggle("district--active", active);
-        };
+          const onPopup = (e) => {
+            const active = e.type === "popupopen";
+            e.target.getElement().classList.toggle("district--active", active);
+          };
 
-        /* Build the map */
-        console.log("houseFeatures 2", houseFeatures); // {type: 'FeatureCollection', features: Array(40)}
+          /* Create layers */
 
-        const houseLayer = L.geoJson(houseFeatures, {
-          style: (feature) => districtStyle(repProperties(feature)),
-          onEachFeature: (feature, layer) => {
-            const rep = repProperties(feature);
+          const houseLayer = L.geoJson(houseFeatures, {
+            style: (feature) => districtStyle(houseProperties(feature)),
+            onEachFeature: (feature, layer) => {
+              const rep = houseProperties(feature);
 
-            layer.bindPopup(districtPopup(rep));
-            layer.on("popupopen", onPopup);
-            layer.on("popupclose", onPopup);
+              layer.bindPopup(districtPopup(rep));
+              layer.on("popupopen", onPopup);
+              layer.on("popupclose", onPopup);
 
-            // Enable searching by name or district; inspired by:
-            // https://github.com/stefanocudini/leaflet-search/issues/52#issuecomment-266168224
-            // eslint-disable-next-line no-param-reassign
-            feature.properties.index = `${rep.first_name} ${rep.last_name} - ${rep.district}`;
-          },
-        });
+              // Enable searching by name or district; inspired by:
+              // https://github.com/stefanocudini/leaflet-search/issues/52#issuecomment-266168224
+              // eslint-disable-next-line no-param-reassign
+              feature.properties.index = `${rep.first_name} ${rep.last_name} - ${rep.district}`;
+            },
+          });
 
-        const searchControl = new L.Control.Search({
-          layer: houseLayer,
-          propertyName: "index",
-          initial: false,
-          marker: false,
-          textPlaceholder: "Search reps and districts",
-          autoCollapse: true,
-          moveToLocation(latlng, title, map) {
-            map.fitBounds(latlng.layer.getBounds());
-            latlng.layer.openPopup();
-          },
-        });
+          const senateLayer = L.geoJson(senateFeatures, {
+            style: (feature) => districtStyle(senateProperties(feature)),
+            onEachFeature: (feature, layer) => {
+              const rep = senateProperties(feature);
 
-        const legendControl = L.control({ position: "topright" });
-        legendControl.onAdd = () => {
-          const div = L.DomUtil.create("div", "legend");
-          div.innerHTML = districtLegend();
-          return div;
-        };
+              layer.bindPopup(districtPopup(rep));
+              layer.on("popupopen", onPopup);
+              layer.on("popupclose", onPopup);
 
-        const map = L.map("map") // This is where ID is set. (<id="map">)
-          .addLayer(L.tileLayer.provider("CartoDB.Positron"))
-          .addLayer(houseLayer)
-          .addControl(searchControl)
-          .addControl(legendControl)
-          .fitBounds(houseLayer.getBounds());
+              // Enable searching by name or district; inspired by:
+              // https://github.com/stefanocudini/leaflet-search/issues/52#issuecomment-266168224
+              // eslint-disable-next-line no-param-reassign
+              feature.properties.index = `${rep.first_name} ${rep.last_name} - ${rep.district}`;
+            },
+          });
 
-        // Avoid accidental excessive zoom out
-        map.setMinZoom(map.getZoom());
-      });
-    </script>
+          /* Create controls */
 
-    <script>
-      /* global L, Papa */
+          const houseSearchControl = new L.Control.Search({
+            layer: houseLayer,
+            propertyName: "index",
+            initial: false,
+            marker: false,
+            textPlaceholder: "Search reps and districts",
+            autoCollapse: true,
+            moveToLocation(latlng, title, map) {
+              map.fitBounds(latlng.layer.getBounds());
+              latlng.layer.openPopup();
+            },
+          });
 
-      /* Load the supporter data and house district boundaries */
+          const senateSearchControl = new L.Control.Search({
+            layer: senateLayer,
+            propertyName: "index",
+            initial: false,
+            marker: false,
+            textPlaceholder: "Search reps and districts",
+            autoCollapse: true,
+            moveToLocation(latlng, title, map) {
+              map.fitBounds(latlng.layer.getBounds());
+              latlng.layer.openPopup();
+            },
+          });
 
-      Promise.all([
-        fetch(
-          // House Google Sheet
-          // "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=1476672185&single=true&output=csv"
+          const legendControl = L.control({ position: "topright" });
+          legendControl.onAdd = () => {
+            const div = L.DomUtil.create("div", "legend");
+            div.innerHTML = districtLegend();
+            return div;
+          };
 
-          // Senate Google Sheet
-          "https://docs.google.com/spreadsheets/d/e/2PACX-1vTVYyEwCVbvN9J6WQizvy7_s7gxyUs0qlf8NDPN_STT2wMMDYo2XbhwmTuoULK8zZp-v1AR-N15WiCL/pub?gid=34717615&single=true&output=csv"
-        )
-          .then((response) => response.text())
-          .then((csv) => {
-            const parsed = Papa.parse(csv, {
-              header: true,
-              dynamicTyping: true,
-            });
-            return Promise.resolve(parsed.data);
-          }),
-        fetch(
-          // House district boundary
-          // "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_house.geojson"
+          // const houseMap = L.map("houseMap") // This is where ID is set. (<id="map">)
+          //   .addLayer(L.tileLayer.provider("CartoDB.Positron"))
+          //   .addLayer(houseLayer)
+          //   .addControl(houseSearchControl)
+          //   .addControl(legendControl)
+          //   .fitBounds(houseLayer.getBounds());
 
-          // Senate district boundary
-          "https://raw.githubusercontent.com/bhrutledge/ma-legislature/main/dist/ma_senate.geojson"
-        ).then((response) => response.json()),
-      ]).then(([supporters, houseFeatures]) => {
-        const supportersByDistrict = supporters.reduce((acc, cur) => {
-          acc[cur.district] = cur;
-          return acc;
-        }, {});
+          // const senateMap = L.map("senateMap") // This is where ID is set. (<id="map">)
+          //   .addLayer(L.tileLayer.provider("CartoDB.Positron"))
+          //   .addLayer(senateLayer)
+          //   .addControl(senateSearchControl)
+          //   .addControl(legendControl)
+          //   .fitBounds(senateLayer.getBounds());
 
-        console.log(supportersByDistrict);
+          var searchLayer = L.layerGroup([houseLayer, senateLayer]);
+          const SearchControl = new L.Control.Search({
+            layer: searchLayer,
+            propertyName: "index",
+            initial: false,
+            marker: false,
+            textPlaceholder: "Search reps and districts",
+            autoCollapse: true,
+            moveToLocation(latlng, title, map) {
+              map.fitBounds(latlng.layer.getBounds());
+              latlng.layer.openPopup();
+            },
+          });
 
-        // returns legislator name
-        function repProperties(feature) {
-          const supporter = supportersByDistrict[feature.properties.district];
-          return supporter;
-          /* TODO: Join with feature properties when contact info for "elect" reps is added
-      // Supporter info from Sheet may be incomplete, so only prefer it to
-      // replace outgoing incumbents
-      return supporter && supporter.elect
-        ? { ...feature.properties, ...supporter } : { ...supporter, ...feature.properties };
-      */
+          /* Build Map */
+
+          // base map
+          const USmap = L.tileLayer.provider("CartoDB.Positron");
+
+          var map = L.map("map", {
+            layers: [USmap, houseLayer], // initial view: house support map
+          })
+            .addControl(legendControl)
+            // .addControl(SearchControl) : Doesn't really work now
+            .fitBounds(houseLayer.getBounds());
+
+          // baselayers make radial buttons at the control pannel
+          var baseLayers = {
+            House: houseLayer,
+            Senate: senateLayer,
+          };
+
+          L.control.layers(baseLayers).addTo(map);
+
+          // Avoid accidental excessive zoom out
+          map.setMinZoom(map.getZoom());
         }
-
-        /* Templates for map elements */
-
-        const districtLegend = () => /* html */ `
-      <div class="legend__item legend__item--voted">
-        Supports Debt-free Education
-      </div>
-      <div class="legend__item legend__item--none">
-        Support Unknown
-      </div>
-    `;
-
-        const districtStyle = (rep) => ({
-          // Expecting "voted", or "none"
-          className: `district district--${rep.color}`,
-        });
-
-        const districtPopup = (rep) => `
-      <p>
-        <strong>${rep.first_name} ${rep.last_name}</strong>
-        ${rep.url ? `(<a href="${rep.url}">contact</a>)` : ""}
-        <br />${rep.party ? `${rep.party},` : ""}
-        ${rep.district}
-        ${rep.elect ? "(Elect)" : ""}
-      </p>
-
-    `;
-
-        const onPopup = (e) => {
-          const active = e.type === "popupopen";
-          e.target.getElement().classList.toggle("district--active", active);
-        };
-
-        /* Build the map */
-        console.log("houseFeatures 2", houseFeatures); // {type: 'FeatureCollection', features: Array(40)}
-
-        const houseLayer = L.geoJson(houseFeatures, {
-          style: (feature) => districtStyle(repProperties(feature)),
-          onEachFeature: (feature, layer) => {
-            const rep = repProperties(feature);
-
-            layer.bindPopup(districtPopup(rep));
-            layer.on("popupopen", onPopup);
-            layer.on("popupclose", onPopup);
-
-            // Enable searching by name or district; inspired by:
-            // https://github.com/stefanocudini/leaflet-search/issues/52#issuecomment-266168224
-            // eslint-disable-next-line no-param-reassign
-            feature.properties.index = `${rep.first_name} ${rep.last_name} - ${rep.district}`;
-          },
-        });
-
-        const searchControl = new L.Control.Search({
-          layer: houseLayer,
-          propertyName: "index",
-          initial: false,
-          marker: false,
-          textPlaceholder: "Search reps and districts",
-          autoCollapse: true,
-          moveToLocation(latlng, title, map) {
-            map.fitBounds(latlng.layer.getBounds());
-            latlng.layer.openPopup();
-          },
-        });
-
-        const legendControl = L.control({ position: "topright" });
-        legendControl.onAdd = () => {
-          const div = L.DomUtil.create("div", "legend");
-          div.innerHTML = districtLegend();
-          return div;
-        };
-
-        const map = L.map("map2")
-          .addLayer(L.tileLayer.provider("CartoDB.Positron"))
-          .addLayer(houseLayer)
-          .addControl(searchControl)
-          .addControl(legendControl)
-          .fitBounds(houseLayer.getBounds());
-
-        // Avoid accidental excessive zoom out
-        map2.setMinZoom(map2.getZoom());
-      });
+      );
     </script>
   </body>
 </html>
