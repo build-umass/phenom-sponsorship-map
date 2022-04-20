@@ -363,19 +363,19 @@
           //   .addControl(legendControl)
           //   .fitBounds(senateLayer.getBounds());
 
-          var searchLayer = L.layerGroup([houseLayer, senateLayer]);
-          const SearchControl = new L.Control.Search({
-            layer: searchLayer,
-            propertyName: "index",
-            initial: false,
-            marker: false,
-            textPlaceholder: "Search reps and districts",
-            autoCollapse: true,
-            moveToLocation(latlng, title, map) {
-              map.fitBounds(latlng.layer.getBounds());
-              latlng.layer.openPopup();
-            },
-          });
+          // var searchLayer = L.layerGroup([houseLayer, senateLayer]);
+          // const SearchControl = new L.Control.Search({
+          //   layer: searchLayer,
+          //   propertyName: "index",
+          //   initial: false,
+          //   marker: false,
+          //   textPlaceholder: "Search reps and districts",
+          //   autoCollapse: true,
+          //   moveToLocation(latlng, title, map) {
+          //     map.fitBounds(latlng.layer.getBounds());
+          //     latlng.layer.openPopup();
+          //   },
+          // });
 
           /* Build Map */
 
@@ -386,7 +386,7 @@
             layers: [USmap, houseLayer], // initial view: house support map
           })
             .addControl(legendControl)
-            // .addControl(SearchControl) : Doesn't really work now
+            .addControl(houseSearchControl) // Doesn't really work now
             .fitBounds(houseLayer.getBounds());
 
           // baselayers make radial buttons at the control pannel
@@ -395,7 +395,25 @@
             Senate: senateLayer,
           };
 
+
           L.control.layers(baseLayers).addTo(map);
+
+
+          var house = true;
+
+          function changeSearch() {
+            if (house) {
+              map.removeControl(houseSearchControl);
+              map.addControl(senateSearchControl);
+              house = false;
+            } else {
+              map.removeControl(senateSearchControl);
+              map.addControl(houseSearchControl);
+              house = true;
+            }
+          }
+
+          map.on('baselayerchange', changeSearch);
 
           // Avoid accidental excessive zoom out
           map.setMinZoom(map.getZoom());
