@@ -321,7 +321,7 @@
             propertyName: "index",
             initial: false,
             marker: false,
-            textPlaceholder: "Search reps and districts",
+            textPlaceholder: "Search reps or districts",
             autoCollapse: true,
             moveToLocation(latlng, title, map) {
               map.fitBounds(latlng.layer.getBounds());
@@ -334,7 +334,7 @@
             propertyName: "index",
             initial: false,
             marker: false,
-            textPlaceholder: "Search reps and districts",
+            textPlaceholder: "Search senators or districts",
             autoCollapse: true,
             moveToLocation(latlng, title, map) {
               map.fitBounds(latlng.layer.getBounds());
@@ -349,34 +349,6 @@
             return div;
           };
 
-          // const houseMap = L.map("houseMap") // This is where ID is set. (<id="map">)
-          //   .addLayer(L.tileLayer.provider("CartoDB.Positron"))
-          //   .addLayer(houseLayer)
-          //   .addControl(houseSearchControl)
-          //   .addControl(legendControl)
-          //   .fitBounds(houseLayer.getBounds());
-
-          // const senateMap = L.map("senateMap") // This is where ID is set. (<id="map">)
-          //   .addLayer(L.tileLayer.provider("CartoDB.Positron"))
-          //   .addLayer(senateLayer)
-          //   .addControl(senateSearchControl)
-          //   .addControl(legendControl)
-          //   .fitBounds(senateLayer.getBounds());
-
-          // var searchLayer = L.layerGroup([houseLayer, senateLayer]);
-          // const SearchControl = new L.Control.Search({
-          //   layer: searchLayer,
-          //   propertyName: "index",
-          //   initial: false,
-          //   marker: false,
-          //   textPlaceholder: "Search reps and districts",
-          //   autoCollapse: true,
-          //   moveToLocation(latlng, title, map) {
-          //     map.fitBounds(latlng.layer.getBounds());
-          //     latlng.layer.openPopup();
-          //   },
-          // });
-
           /* Build Map */
 
           // base map
@@ -386,7 +358,7 @@
             layers: [USmap, houseLayer], // initial view: house support map
           })
             .addControl(legendControl)
-            .addControl(houseSearchControl) // Doesn't really work now
+            .addControl(houseSearchControl)
             .fitBounds(houseLayer.getBounds());
 
           // baselayers make radial buttons at the control pannel
@@ -395,9 +367,7 @@
             Senate: senateLayer,
           };
 
-
           L.control.layers(baseLayers).addTo(map);
-
 
           var house = true;
 
@@ -413,7 +383,7 @@
             }
           }
 
-          map.on('baselayerchange', changeSearch);
+          map.on("baselayerchange", changeSearch);
 
           // Avoid accidental excessive zoom out
           map.setMinZoom(map.getZoom());
